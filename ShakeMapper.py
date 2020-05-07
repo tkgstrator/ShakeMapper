@@ -11,7 +11,7 @@ def loadPos(xml, type, id, alpha):
     x = [[], [], []]
     y = [[], [], []]
     if str(type) == "0":
-        name = "Zako"
+        name = "Salmonids"
         for tree in xml.findall("./C1/C0/[@Name='Objs']/C1/A0/[@StringValue='Obj_CoopSpawnPointZako_1']/.."):
             pos = tree.findall("./C1/[@Name='Translate']/")
             layer = tree.find("./A0/[@Name='LayerConfigName']")
@@ -177,6 +177,17 @@ def loadPos(xml, type, id, alpha):
     plt.scatter(x[1], y[1], c="blue")
     plt.scatter(x[2], y[2], c="yellow")
     plt.axes().set_aspect('equal', 'datalim')
+    if id == 0:
+        title = "Spawning Grounds" + "(" + name + ")"
+    if id == 1:
+        title = "Marooner's Bay" + "(" + name + ")"
+    if id == 2:
+        title = "Lost Outpost" + "(" + name + ")"
+    if id == 3:
+        title = "Salmonid Smokeyard" + "(" + name + ")"
+    if id == 4:
+        title = "Ruins of Ark Polaris" + "(" + name + ")"
+    plt.title(title, fontsize=16)
     if alpha == 0:
         plt.savefig(str(name) + "_" + str(id) +".png", transparent=True, dpi=300)
     else:
