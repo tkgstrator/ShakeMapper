@@ -13,7 +13,6 @@ def loadPos(xml, xpath, id):
     y = [[[], [], []], [[], [], []], [[], [], []]]
     z = [[[], [], []], [[], [], []], [[], [], []]]
     b = [[0] * 3, [0] * 3]
-    d = [[[], [], []], [[], [], []], [[], [], []]]
     #Ikura Bank
     for tree in xml.findall("./C1/C0/[@Name='Objs']/C1/A0/[@StringValue='Obj_CoopIkuraBank']/.."):
         pos = tree.findall("./C1/[@Name='Translate']/")
@@ -29,14 +28,20 @@ def loadPos(xml, xpath, id):
             b[1][0] = mX
             b[1][1] = mY
             b[1][2] = mZ
-        plt.scatter(mX, mY, c="black", marker="s")
+    for tree in xml.findall("./C1/C0/[@Name='Objs']/C1/A0/[@StringValue='Obj_CoopIkuraBankBase']/.."):
+        pos = tree.findall("./C1/[@Name='Translate']/")
+        layer = tree.find("./A0/[@Name='LayerConfigName']")
+        mX = float(pos[0].attrib["StringValue"])
+        mY = float(pos[2].attrib["StringValue"])
+        mZ = float(pos[1].attrib["StringValue"])
+        plt.scatter(mX, mY, c="white", marker="s")
     for tree in xml.findall("./C1/C0/C1/A0/[@StringValue='%s']/.." % xpath):
         pos = tree.findall("./C1/[@Name='Translate']/")
         layer = tree.find("./A0/[@Name='LayerConfigName']")
         mX = float(pos[0].attrib["StringValue"])
         mY = float(pos[2].attrib["StringValue"])
         mZ = float(pos[1].attrib["StringValue"])
-
+        
         # Drizzler
         if xpath == "Obj_CoopJumpPointEnemyRocket":
             # if tree.find("./D0/[@Name='IsLinkDest']").attrib["StringValue"] == "False":
@@ -55,39 +60,45 @@ def loadPos(xml, xpath, id):
             j = int(xpath[-1]) - 1
             x[i][j].append(mX)
             y[i][j].append(mY)
-            z[i][j].append(mY)
+            z[i][j].append(mZ)
             continue
         # Otherwise
+        if pos == None:
+            continue
         # print(xpath, layer.attrib["StringValue"])
 
-        # if layer.attrib["StringValue"] != "CoopWater":
-        #     continue
-        #     i = int(layer.attrib["StringValue"][-1])
-        #     x[i][0].append(mX)
-        #     y[i][0].append(mY)
-        #     z[i][0].append(mZ)
-        
+        if layer.attrib["StringValue"][:9] == "CoopWater" or layer.attrib["StringValue"] == "Cmn":
+            if layer.attrib["StringValue"][:9] == "CoopWater":
+                i = int(layer.attrib["StringValue"][-1])
+            else:
+                i = 0
+            x[i][0].append(mX)
+            y[i][0].append(mY)
+            z[i][0].append(mZ)
     if (xpath[-2:] == "_1") or (xpath[-2:] == "_2") or (xpath[-2:] == "_3"):
         i = int(xpath[-1]) - 1
         j = int(layer.attrib["StringValue"][-1])
     # print(xpath, "Size", len(x[0][0]), len(x[1][0]), len(x[2][0]))
     plt.xlim([700, -960])
+    # plt.xlim([-960, 700])
     plt.ylim([-600, 500])
-
 
     if "Point" in xpath:
         for i in range (0, len(x[0])):
-            for j in range (0, len(x[0][i])):
+            # print(xpath, b[0], x[0][i], y[0][i], z[0][i])
+            for j in range (0, len(x[0][i])): # Low Tide
                 dist = math.sqrt(math.pow((b[0][0] - x[0][i][j]), 2) +  math.pow((b[0][1] - y[0][i][j]), 2) + math.pow((b[0][2] - z[0][i][j]), 2))
-                plt.annotate(round(dist), (x[0][i][j], y[0][i][j]), color="black")
-        for i in range (0, len(x[1])):
+                plt.annotate(round(dist), (x[0][i][j], y[0][i][j]), color="white")
+        for i in range (0, len(x[1])): # Middle Tide
             for j in range (0, len(x[1][i])):
                 dist = math.sqrt(math.pow((b[1][0] - x[1][i][j]), 2) +  math.pow((b[1][1] - y[1][i][j]), 2) + math.pow((b[1][2] - z[1][i][j]), 2))
-                plt.annotate(round(dist), (x[1][i][j], y[1][i][j]), color="black")
-        for i in range (0, len(x[2])):
+                if xpath != "Obj_CoopJumpPointEnemyRocket":
+                    plt.annotate(round(dist), (x[1][i][j], y[1][i][j]), color="white")
+        for i in range (0, len(x[2])): # High Tide
             for j in range (0, len(x[2][i])):
                 dist = math.sqrt(math.pow((b[1][0] - x[2][i][j]), 2) +  math.pow((b[1][1] - y[2][i][j]), 2) + math.pow((b[1][2] - z[2][i][j]), 2))
-                plt.annotate(round(dist), (x[2][i][j], y[2][i][j]), color="black")
+                if xpath != "Obj_CoopJumpPointEnemyRocket":
+                    plt.annotate(round(dist), (x[2][i][j], y[2][i][j]), color="white")
 
     # plt.axes().set_aspect('equal', 'datalim')
     plt.scatter(x[0][0], y[0][0], c="red", marker="o")
@@ -100,7 +111,7 @@ def loadPos(xml, xpath, id):
     plt.scatter(x[2][1], y[2][1], c="yellow", marker="^")
     plt.scatter(x[2][2], y[2][2], c="yellow", marker="D")
     if (xpath[-2:] != "_1") and (xpath[-2:] != "_2"):
-        plt.savefig(str(id) + "_" + xpath +".png", dpi=300)
+        plt.savefig(str(id) + "_" + xpath +".png", transparent=True, dpi=300)
         plt.close()
 
 if __name__ == "__main__":
