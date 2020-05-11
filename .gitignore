@@ -130,3 +130,5 @@ dmypy.json
 
 # User Defenition
 *.png
+xml
+*.xml

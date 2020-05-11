@@ -8,7 +8,16 @@ import math
 import matplotlib
 # matplotlib.use('Agg')
 
-def loadPos(xml, xpath, id):
+def calcDist(mX, mY, mZ, nX, nY, nZ, value, tide):
+    # print("Dist Check", len(mX))
+    for i in range (0, len(mX)):
+        dist = math.sqrt(math.pow(mX[i] - nX, 2) + math.pow(mY[i] - nY, 2) + math.pow(mZ[i] - nZ, 2))
+        # print("Tide", tide, "Dist", round(dist))
+        if dist <= value:
+            return False
+    return True
+
+def loadPos(xml, xpath, id, type):
     x = [[[], [], []], [[], [], []], [[], [], []]]
     y = [[[], [], []], [[], [], []], [[], [], []]]
     z = [[[], [], []], [[], [], []], [[], [], []]]
@@ -28,7 +37,6 @@ def loadPos(xml, xpath, id):
             b[1][0] = mX
             b[1][1] = mY
             b[1][2] = mZ
-        plt.scatter(mX, mY, c="black", marker="s")
     for tree in xml.findall("./C1/C0/[@Name='Objs']/C1/A0/[@StringValue='Obj_CoopIkuraBankBase']/.."):
         pos = tree.findall("./C1/[@Name='Translate']/")
         layer = tree.find("./A0/[@Name='LayerConfigName']")
@@ -36,6 +44,8 @@ def loadPos(xml, xpath, id):
         mY = float(pos[2].attrib["StringValue"])
         mZ = float(pos[1].attrib["StringValue"])
         plt.scatter(mX, mY, c="black", marker="s")
+
+    # Load XML All Lines
     for tree in xml.findall("./C1/C0/C1/A0/[@StringValue='%s']/.." % xpath):
         pos = tree.findall("./C1/[@Name='Translate']/")
         layer = tree.find("./A0/[@Name='LayerConfigName']")
@@ -43,19 +53,32 @@ def loadPos(xml, xpath, id):
         mY = float(pos[2].attrib["StringValue"])
         mZ = float(pos[1].attrib["StringValue"])
         
+        # Geyser
+        if xpath == "Obj_CoopSpawnGeyser":
+            if layer.attrib["StringValue"][:9] != "CoopWater":
+                continue
+            i = int(layer.attrib["StringValue"][-1])
+            dist = math.sqrt(math.pow(b[1][0] - mX, 2) + math.pow(b[1][1] - mY, 2) + math.pow(b[1][2] - mZ, 2))
+            if dist <= 450:
+                x[i][0].append(mX)
+                y[i][0].append(mY)
+                z[i][0].append(mZ)
+            else:
+                print("Geyser Point is too far from IkuraBank.")
+                layer.set("StringValue", "Tmp")
+            continue
         # Drizzler
         if xpath == "Obj_CoopJumpPointEnemyRocket":
-            # if tree.find("./D0/[@Name='IsLinkDest']").attrib["StringValue"] == "False":
-            #     continue
             if layer.attrib["StringValue"][:9] != "CoopWater":
-                print(layer.attrib["StringValue"][:9])
-                # continue
+                continue
             i = int(layer.attrib["StringValue"][-1])
-            if i == 2:
-                print(mX, mY, mZ)
-            x[i][0].append(mX)
-            y[i][0].append(mY)
-            z[i][0].append(mZ)
+            if calcDist(x[i][0], y[i][0], z[i][0], mX, mY, mZ, 200, i):
+                x[i][0].append(mX)
+                y[i][0].append(mY)
+                z[i][0].append(mZ)
+            else:
+                print("Drizzler Point is too close.")
+                layer.set("StringValue", "Tmp")
             continue
         # Tower Flyfish Salmonids
         if (xpath[-2:] == "_1") or (xpath[-2:] == "_2") or (xpath[-2:] == "_3"):
@@ -84,10 +107,9 @@ def loadPos(xml, xpath, id):
     # print(xpath, "Size", len(x[0][0]), len(x[1][0]), len(x[2][0]))
     plt.xlim([700, -960])
     # plt.xlim([-960, 700])
-    plt.ylim([-600, 500])
+    plt.ylim([-700, 700])
 
-    # Display Distance from IkuraBank
-    if "Point" in xpath:
+    if "Point" in xpath or "Geyser" in xpath:
         for i in range (0, len(x[0])):
             # print(xpath, b[0], x[0][i], y[0][i], z[0][i])
             for j in range (0, len(x[0][i])): # Low Tide
@@ -120,33 +142,37 @@ def loadPos(xml, xpath, id):
                     labelleft=False,
                     labelright=False,
                     labeltop=False)
-        plt.savefig(str(id) + "_" + xpath +".png", dpi=150, transparent=False, bbox_inches="tight", pad_inches=0.0)
+        plt.savefig(str(id) + "_mod_" + xpath +".png", dpi=150, transparent=False, bbox_inches="tight", pad_inches=0.0)
         plt.close()
 
 if __name__ == "__main__":
-    print("0: Spawning Grounds(Shakeup)\n1: Marooner's Bay(Shakeship)\n2: Lost Outpost(Shakehouse)\n3: Salmonid Smokeyard(Shakelift)\n4: Ruins of Ark Polaris(Shakeride)\n5: All\nInput the key :")
-    id = input()
-    if id == "5":
-        for id in range(0, 5):
-            xmlp = et.XMLParser(encoding="utf-8")
-            xml = et.parse("./xml/" + str(id) + ".xml", parser=xmlp)
-            config = []
-            sum = 0
-            for obj in xml.findall("./C1/C0/C1/A0/[@Name='UnitConfigName']"):
-                config.append(obj.attrib["StringValue"])
-            config = sorted(list(set(config)))
-            for xpath in config:
-                print("Object Name:", xpath)
-                param = xml.findall("./C1/C0/C1/A0/[@StringValue='%s']/.." % xpath)
-                sum += len(param)
-                print(xpath, len(param))
-                loadPos(xml, xpath, id)
-            print("UnitConfigName", sum)
-        exit(0)
-    print("0: Zako SpawnPoint\n1: Boss SpawnPoint\n2: Tower ArrivalPoint\n3: Drizzler JumpPoint\n4: Flyfish ArrivalPoint\n5: All\nInput tht key :")
-    type = input()
-    print("0: Transparent\n1: None\nInput tht key :")
-    alpha = input()
-    xmlp = et.XMLParser(encoding="utf-8")
-    xml = et.parse("./xml/" + str(id) + ".xml", parser=xmlp)
-    loadPos(xml, type, id, alpha)
+    print("0: Disable Far Object\n")
+    print("Input the number :")
+    # id = input()
+    for id in range(0, 5):
+        xmlp = et.XMLParser(encoding="utf-8")
+        xml = et.parse("./xml/" + str(id) + ".xml", parser=xmlp)
+        config = []
+        sum = 0
+        for obj in xml.findall("./C1/C0/C1/A0/[@Name='UnitConfigName']"):
+            config.append(obj.attrib["StringValue"])
+        config = sorted(list(set(config)))
+        for xpath in config:
+            print("Object Name:", xpath)
+            param = xml.findall("./C1/C0/C1/A0/[@StringValue='%s']/.." % xpath)
+            sum += len(param)
+            # print(xpath, len(param))
+            loadPos(xml, xpath, id, 0)
+        if id == 0:
+            name = "Fld_Shakeup00_Cop.byaml"
+        if id == 1:
+            name = "Fld_Shakeship00_Cop.byaml"
+        if id == 2:
+            name = "Fld_Shakehouse00_Cop.byaml"
+        if id == 3:
+            name = "Fld_Shakelift00_Cop.byaml"
+        if id == 4:
+            name = "Fld_Shakeride00_Cop.byaml"
+
+        xml.write("./mod/" + name + ".xml")
+        print("UnitConfigName", sum)
