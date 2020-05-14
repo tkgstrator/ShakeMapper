@@ -31,7 +31,7 @@
       <C1>
         <A0 Name="Id" StringValue="obj2259" />
         <D0 Name="IsLinkDest" StringValue="False" />
-        <A0 Name="LayerConfigName" StringValue="Tmp" />
+        <A0 Name="LayerConfigName" StringValue="Cmn" />
         <C1 Name="Links">
           <C0 Name="Rail">
             <C1>
